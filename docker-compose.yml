@@ -1,0 +1,56 @@
+version: "3.9"
+
+# ==============================================================================
+# VynX MVP — Service Orchestration
+#
+# Brings up the full settlement stack: the Go relayer and the TypeScript agent.
+# Both services share a private bridge network and load credentials from .env.
+#
+# Usage:
+#   make reviewer-demo   — one-click demo with live log streaming
+#   make up              — start all services in detached mode
+#   make down            — stop and remove all containers
+# ==============================================================================
+
+services:
+  # ── VynX Relayer ─────────────────────────────────────────────────────────────
+  # Go service responsible for on-chain settlement execution via CDP MPC wallets.
+  vynx-relayer:
+    build:
+      context: ./vynx-relayer-mvp
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    networks:
+      - vynx-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ── VynX Agent ───────────────────────────────────────────────────────────────
+  # TypeScript service that uses Coinbase AgentKit to autonomously construct and
+  # submit settlement intents to the relayer over HTTP.
+  vynx-agent:
+    build:
+      context: ./vynx-plugin-mvp
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      VYNX_RELAYER_URL: http://vynx-relayer:8080
+    depends_on:
+      vynx-relayer:
+        condition: service_healthy
+    networks:
+      - vynx-network
+    restart: on-failure
+
+networks:
+  vynx-network:
+    driver: bridge

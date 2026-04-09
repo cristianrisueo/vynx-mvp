@@ -1,0 +1,44 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# VynX Agent — TypeScript/Node.js 24 Container
+# Build context: vynx-mvp/ (project root)
+#
+# The orchestrator lives at scripts/run_workflow.ts (root level).
+# The plugin source lives at vynx-plugin-mvp/src/.
+#
+# TypeScript is compiled via `tsc -p tsconfig.scripts.json` at image build time.
+# emitDecoratorMetadata (required by the AgentKit @CreateAction decorator
+# registry) is a TypeScript compiler feature not supported by esbuild/tsx.
+#
+# Compiled output layout inside /app/vynx-plugin-mvp/.sim-dist/:
+#   scripts/run_workflow.js          ← CMD target
+#   vynx-plugin-mvp/src/…           ← compiled plugin modules
+# ──────────────────────────────────────────────────────────────────────────────
+FROM node:24-alpine
+
+RUN apk add --no-cache ca-certificates
+
+WORKDIR /app
+
+# Cache dependency layer — manifests are copied from the plugin subdirectory
+# into WORKDIR so npm ci installs node_modules at /app/node_modules/.
+# Both tsc (running from /app) and node (resolving upward from .sim-dist/)
+# will find packages there without any path gymnastics.
+COPY vynx-plugin-mvp/package.json vynx-plugin-mvp/package-lock.json* ./
+RUN npm ci --ignore-scripts
+
+# Copy plugin source tree and TypeScript configs.
+COPY vynx-plugin-mvp/src/ ./vynx-plugin-mvp/src/
+COPY vynx-plugin-mvp/tsconfig.json vynx-plugin-mvp/tsconfig.scripts.json ./vynx-plugin-mvp/
+
+# Copy root-level scripts directory containing the orchestrator.
+COPY scripts/ ./scripts/
+
+# Non-root user for security hardening.
+RUN adduser -D -u 1001 agent && chown -R agent:agent /app
+USER agent
+
+# Compile TypeScript with full emitDecoratorMetadata support.
+# tsc resolves @coinbase/agentkit from /app/node_modules/ because WORKDIR is /app.
+RUN npx tsc -p vynx-plugin-mvp/tsconfig.scripts.json
+
+CMD ["node", "vynx-plugin-mvp/.sim-dist/scripts/run_workflow.js"]

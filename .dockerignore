@@ -1,0 +1,10 @@
+vynx-relayer-mvp/
+vynx-settlement-mvp/
+vynx-plugin-mvp/node_modules/
+vynx-plugin-mvp/.sim-dist/
+vynx-plugin-mvp/coverage/
+vynx-plugin-mvp/dist/
+vynx-plugin-mvp/test/
+.git/
+.env
+*.lock

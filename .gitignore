@@ -1,1 +1,4 @@
 .env
+
+# Docker BuildKit build-context lock files
+*.lock

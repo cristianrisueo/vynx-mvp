@@ -36,8 +36,8 @@ services:
   # submit settlement intents to the relayer over HTTP.
   vynx-agent:
     build:
-      context: ./vynx-plugin-mvp
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.agent
     env_file:
       - .env
     environment:

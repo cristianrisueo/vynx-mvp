@@ -81,7 +81,7 @@ The Relayer is designed to be *boring* under load. That is the point.
 
 ---
 
-## Quickstart for Grant Reviewers
+## <a name="quick-start"></a> Quickstart for Grant Reviewers
 
 > Prerequisites: [Docker Desktop](https://www.docker.com/products/docker-desktop/) ≥ 4.x and `make`.
 
